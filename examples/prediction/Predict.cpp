@@ -7,8 +7,11 @@
 #include "WorldBelief.h"
 #include <dirent.h>
 #include <sys/types.h>
-#include <filesystem>
-#include <iostream>
+#include <experimental/filesystem>
+#include <pybind11/pybind11.h>
+#include <boost/filesystem/path.hpp>
+
+namespace py = pybind11;
 
 using namespace std;
 using namespace RVO;
@@ -21,6 +24,30 @@ GammaPredictor::GammaPredictor (){
 	}
 
 	gamma_sim_ = new RVOSimulator();
+}
+
+GammaPredictor::GammaPredictor(const std::string &input_folder, const std::string &output_file_path,
+                                  const std::string &param_file_path) {
+    std::cout << "Input folder: " << input_folder << std::endl;
+    std::cout << "Output file path: " << output_file_path << std::endl;
+
+    if (output_file_path.empty()) {
+        output_file_.open("../gamma_output.txt");
+        if (output_file_.fail()){
+            cout<<"cannot open file: ../gamma_output.txt"<<endl;
+        }
+
+    } else {
+        output_file_.open(output_file_path);
+        if (output_file_.fail()){
+            cout<<"cannot open file: "<< output_file_path << endl;
+        }
+    }
+    this->input_folder = input_folder;
+    this->param_file_path = param_file_path;
+
+    gamma_sim_ = new RVOSimulator();
+
 }
 
 vector<string> GammaPredictor::GetAllFiles(const char *path, string pattern) {
@@ -44,32 +71,44 @@ vector<string> GammaPredictor::GetAllFiles(const char *path, string pattern) {
 
 void GammaPredictor::LoadData(){
 
-	string agent_folder = "../../dataset/";
-	string file_name_pattern = "frame";
-	if (GlobalParams::dataset == DatasetNs::Cross_ct) {
-		agent_folder += "Cross_ct/";
-	} else if (GlobalParams::dataset == DatasetNs::Utown) {
-		agent_folder += "UTown/";
-	} else if (GlobalParams::dataset == DatasetNs::Eth) {
-		agent_folder += "ETH/eth/";
-	} else if (GlobalParams::dataset == DatasetNs::Hotel) {
-		agent_folder += "ETH/hotel/";
-	}else if (GlobalParams::dataset == DatasetNs::Zara01) {
-		agent_folder += "UCY/zara1/";
-	}else if (GlobalParams::dataset == DatasetNs::Zara02) {
-		agent_folder += "UCY/zara2/";
-	}else if (GlobalParams::dataset == DatasetNs::Univ001) {
-		agent_folder += "UCY/univ/students001/";
-	}else if (GlobalParams::dataset == DatasetNs::Univ003) {
-		agent_folder += "UCY/univ/students003/";
-	} else if (GlobalParams::dataset == DatasetNs::Argoverse) {
-        agent_folder += "small_argoverse/1/";
+    std::string cwd =  std::experimental::filesystem::current_path();
+    std::cout << "Current directory: " << cwd << std::endl;
+    string agent_folder{};
+    string file_name_pattern = "frame";
+
+    if (this->input_folder.empty()) {
+        agent_folder = "../../dataset/";
+        if (GlobalParams::dataset == DatasetNs::Cross_ct) {
+            agent_folder += "Cross_ct/";
+        } else if (GlobalParams::dataset == DatasetNs::Utown) {
+            agent_folder += "UTown/";
+        } else if (GlobalParams::dataset == DatasetNs::Eth) {
+            agent_folder += "ETH/eth/";
+        } else if (GlobalParams::dataset == DatasetNs::Hotel) {
+            agent_folder += "ETH/hotel/";
+        }else if (GlobalParams::dataset == DatasetNs::Zara01) {
+            agent_folder += "UCY/zara1/";
+        }else if (GlobalParams::dataset == DatasetNs::Zara02) {
+            agent_folder += "UCY/zara2/";
+        }else if (GlobalParams::dataset == DatasetNs::Univ001) {
+            agent_folder += "UCY/univ/students001/";
+        }else if (GlobalParams::dataset == DatasetNs::Univ003) {
+            agent_folder += "UCY/univ/students003/";
+        } else if (GlobalParams::dataset == DatasetNs::Argoverse) {
+            agent_folder += "small_argoverse/1";
+        }
+    } else {
+        agent_folder = this->input_folder;
     }
+
 
 	vector<string> agent_files = GetAllFiles(agent_folder.c_str(), file_name_pattern);
 
 	for (size_t i = 0; i < agent_files.size(); i++){
-		string filename = agent_folder + agent_files[i];
+        std::experimental::filesystem::path a {agent_folder};
+        std::experimental::filesystem::path b {agent_files[i]};
+
+        string filename = (a/b).string();
 		AgentInfo agt_info;
 		agt_info.PreProcess (filename);
 		agents_info_.push_back (agt_info);
@@ -658,7 +697,7 @@ Vector2 GammaPredictor::PredictOneStepForOneAgentAtOneFrame(int predict_begin_fr
 
 
 void GammaPredictor::GammaPredict(){
-	for(size_t i=1; i<GlobalParams::MAX_FRAME; i++){
+	for(size_t i=0; i<GlobalParams::MAX_FRAME; i++){
 		PredictAtOneFrame(i);
 	}
 }
@@ -741,17 +780,14 @@ int main()
 	return 0;
 }
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
-void pygamma()
+void pygamma(const std::string &input_folder, const std::string &output_file_path,
+             const std::string &param_file_path)
 {
-    GammaPredictor p;
+    GammaPredictor p{input_folder, output_file_path, param_file_path};
     p.run();
 
 }
-PYBIND11_MODULE(example, m) {
+PYBIND11_MODULE(pygamma, m) {
     m.doc() = "pybind11 example plugin"; // optional module docstring
 
     m.def("pygamma", &pygamma, "A function that adds two numbers");

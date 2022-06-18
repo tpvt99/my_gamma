@@ -17,13 +17,18 @@ public:
 
 	vector <AgentInfo> agents_info_;
 	ofstream output_file_;
+    std::string input_folder{};
+    std::string param_file_path{};
 	vector <Vector2> goals_;
 	vector <Vector2> directions_;
 	RVO::RVOSimulator* gamma_sim_;
 	LearnBounds learn_bounds_;
 
 	GammaPredictor ();
-	vector<string> GetAllFiles(const char *path, string pattern);
+    GammaPredictor (const std::string &input_folder, const std::string &output_file_path,
+                    const std::string &param_file_path);
+
+    vector<string> GetAllFiles(const char *path, string pattern);
 	void SetObstacles(string agent_folder);
 	void SetDirections(string agent_folder);
 	void LoadData();
