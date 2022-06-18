@@ -754,5 +754,5 @@ void pygamma()
 PYBIND11_MODULE(example, m) {
     m.doc() = "pybind11 example plugin"; // optional module docstring
 
-    m.def("add", &pygamma, "A function that adds two numbers");
+    m.def("pygamma", &pygamma, "A function that adds two numbers");
 }
