@@ -6,17 +6,24 @@
 
 
 namespace GlobalParams{
-	const DatasetNs::Dataset dataset = DatasetNs::Eth;
-	const int MAX_FRAME = (dataset == DatasetNs::Utown? 700: (dataset == DatasetNs::Cross_ct? 421:(dataset == DatasetNs::Eth? 2100:(dataset == DatasetNs::Hotel? 1825:(dataset == DatasetNs::Zara01? 900:(dataset == DatasetNs::Zara02? 1050:(dataset == DatasetNs::Univ001? 450:550)))))));
-	const float  TIME_PER_FRAME = 0.4f;
-	const int PREDICT_FRAME_NUM = 12;
+	const DatasetNs::Dataset dataset = DatasetNs::Argoverse;
+	const int MAX_FRAME = (dataset == DatasetNs::Utown? 700:
+            (dataset == DatasetNs::Cross_ct? 421:
+            (dataset == DatasetNs::Eth? 2100:
+            (dataset == DatasetNs::Hotel? 1825:
+            (dataset == DatasetNs::Zara01? 900:
+            (dataset == DatasetNs::Zara02? 1050:
+            (dataset == DatasetNs::Univ001? 450:
+             (dataset == DatasetNs::Argoverse? 50: 550))))))));
+	const float TIME_PER_FRAME = 0.1f;
+	const int PREDICT_FRAME_NUM = 30;
 	const bool use_predefined_goal = false;
 	const bool use_front_goals = true;
 	const bool use_direction_prio = true;
 	const int angle_d_size = 9;
-	const int history_size = 2;
-	const int predition_horizon = 12;  // in number of frame
-	const float prediction_time = 4.8;
+	const int history_size = 20;
+	const int predition_horizon = 30;  // in number of frame
+	const float prediction_time = 3.0;
 	const float dist_noise_std = 0.25f;
 	bool infer_goal = true;
 	const float total_error = 0;
@@ -122,7 +129,30 @@ void AgentInfo::ReadData(std::string filename){
 
 		}
 
-	} else {
+	} else if (GlobalParams::dataset == DatasetNs::Argoverse) {
+        // Discard the first line which is the header
+        file.ignore ( std::numeric_limits<std::streamsize>::max(), '\n' );
+
+        while(file >>id >>time_frame >>x >>y>>type) {
+            // Ignore the rest of thel ine
+            file.ignore ( std::numeric_limits<std::streamsize>::max(), '\n' );
+
+            if(time_frame>=GlobalParams::MAX_FRAME){ // We read from frame 0, thus if time_frame = MAX_FRAME, we read more than 1, thus need discard
+                time_frame --;
+                break;
+            }
+            if(is_first_frame){
+                start_time_frame = time_frame;
+                agent_id = id;
+                agent_type = "Car";
+                ref_point = "rear_axle_center";
+                is_first_frame = false;
+            }
+
+            pos[time_frame] = Vector2(x,y);
+        }
+    }
+    else {
 		while(file >>id >>time_frame >>u >>v >>x >>y) {  
 			if(time_frame>=GlobalParams::MAX_FRAME-1){
 				time_frame --;
@@ -201,7 +231,7 @@ void AgentInfo::PreProcess(std::string filename){
 	ComputeCurVel();
 	ComputeCurAcc();
 
-	start_time_frame += 4; // the first four frames are used as history
+	start_time_frame += GlobalParams::history_size; // the first history_size frames are used as history
 }
 void AgentInfo::ComputeGoal(){
 	goal = Vector2(pos[end_time_frame].x(), pos[end_time_frame].y());

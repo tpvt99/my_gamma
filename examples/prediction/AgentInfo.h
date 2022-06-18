@@ -22,7 +22,8 @@ namespace DatasetNs {
 		Zara01,
 		Zara02,
 		Univ001,
-		Univ003
+		Univ003,
+        Argoverse
 	};
 };
 
