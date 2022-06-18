@@ -95,7 +95,7 @@ void GammaPredictor::LoadData(){
         }else if (GlobalParams::dataset == DatasetNs::Univ003) {
             agent_folder += "UCY/univ/students003/";
         } else if (GlobalParams::dataset == DatasetNs::Argoverse) {
-            agent_folder += "small_argoverse/1";
+            agent_folder += "small_argoverse/1/";
         }
     } else {
         agent_folder = this->input_folder;
@@ -790,5 +790,6 @@ void pygamma(const std::string &input_folder, const std::string &output_file_pat
 PYBIND11_MODULE(pygamma, m) {
     m.doc() = "pybind11 example plugin"; // optional module docstring
 
-    m.def("pygamma", &pygamma, "A function that adds two numbers");
+    m.def("pygamma", &pygamma, "Running pygamma",
+          py::arg("input_folder"), py::arg("output_file_path"), py::arg("param_file_path"));
 }

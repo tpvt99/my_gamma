@@ -13,3 +13,6 @@
 *.a
 
 build/
+cmake-build-debug/
+dataset/
+pybind11/
