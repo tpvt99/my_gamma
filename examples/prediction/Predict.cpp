@@ -7,6 +7,8 @@
 #include "WorldBelief.h"
 #include <dirent.h>
 #include <sys/types.h>
+#include <filesystem>
+#include <iostream>
 
 using namespace std;
 using namespace RVO;
@@ -42,7 +44,7 @@ vector<string> GammaPredictor::GetAllFiles(const char *path, string pattern) {
 
 void GammaPredictor::LoadData(){
 
-	string agent_folder = "../dataset/";
+	string agent_folder = "../../dataset/";
 	string file_name_pattern = "frame";
 	if (GlobalParams::dataset == DatasetNs::Cross_ct) {
 		agent_folder += "Cross_ct/";
@@ -60,7 +62,9 @@ void GammaPredictor::LoadData(){
 		agent_folder += "UCY/univ/students001/";
 	}else if (GlobalParams::dataset == DatasetNs::Univ003) {
 		agent_folder += "UCY/univ/students003/";
-	}
+	} else if (GlobalParams::dataset == DatasetNs::Argoverse) {
+        agent_folder += "small_argoverse/1/";
+    }
 
 	vector<string> agent_files = GetAllFiles(agent_folder.c_str(), file_name_pattern);
 
@@ -735,4 +739,20 @@ int main()
 	p.run();
 
 	return 0;
+}
+
+#include <pybind11/pybind11.h>
+
+namespace py = pybind11;
+
+void pygamma()
+{
+    GammaPredictor p;
+    p.run();
+
+}
+PYBIND11_MODULE(example, m) {
+    m.doc() = "pybind11 example plugin"; // optional module docstring
+
+    m.def("add", &pygamma, "A function that adds two numbers");
 }
