@@ -1,0 +1,36 @@
+data:
+  dataset_type: ArgoverseDataset
+  joblib_batch_size: 100
+  test:
+    data_files: data/argoverse_gamma/test_obs/
+    features: data/argoverse_features/forecasting_features_test.pkl
+    pipeline: []
+  train:
+    data_files: data/argoverse_gamma/train/
+    features: data/argoverse_features/forecasting_features_train.pkl
+    pipeline: []
+  type_encode:
+    AGENT: Car
+    AV: CAR
+    OTHERS: People
+  val:
+    data_files: data/argoverse_gamma/val/
+    features: data/argoverse_features/forecasting_features_val.pkl
+    pipeline: []
+evaluation:
+  test_eval: {}
+  val_eval:
+    max_neighbors_cl: 3
+    miss_threshold: 2.0
+    n_cl: 0
+    n_guesses_cl: 0
+    prune_n_guesses: 0
+model:
+  k: 1
+  obs_len: 20
+  pred_len: 30
+  test_cfg: {}
+  train_cfg: {}
+  type: Gamma
+  val_cfg: {}
+work_dir: work_dirs/gamma_default/
