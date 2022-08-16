@@ -3,11 +3,12 @@
  */
 
 #include "AgentInfo.h"
+#include <yaml-cpp/yaml.h>
 
 
 namespace GlobalParams{
-	const DatasetNs::Dataset dataset = DatasetNs::Argoverse;
-	const int MAX_FRAME = (dataset == DatasetNs::Utown? 700:
+	DatasetNs::Dataset dataset = DatasetNs::Argoverse;
+	int MAX_FRAME = (dataset == DatasetNs::Utown? 700:
             (dataset == DatasetNs::Cross_ct? 421:
             (dataset == DatasetNs::Eth? 2100:
             (dataset == DatasetNs::Hotel? 1825:
@@ -15,14 +16,15 @@ namespace GlobalParams{
             (dataset == DatasetNs::Zara02? 1050:
             (dataset == DatasetNs::Univ001? 450:
              (dataset == DatasetNs::Argoverse? 50: 550))))))));
-	const float TIME_PER_FRAME = 0.1f;
-	const int PREDICT_FRAME_NUM = 30;
+	float TIME_PER_FRAME = 0.1f;
+	int PREDICT_FRAME_NUM = 30;
+    bool DEBUG = true;
 	const bool use_predefined_goal = false;
 	const bool use_front_goals = true;
 	const bool use_direction_prio = true;
 	const int angle_d_size = 9;
-	const int history_size = 20;
-	const int predition_horizon = 30;  // in number of frame
+	const int history_size = 19;
+	const int prediction_horizon = 30;  // in number of frame
 	const float prediction_time = 3.0;
 	const float dist_noise_std = 0.25f;
 	bool infer_goal = true;
@@ -42,7 +44,16 @@ namespace GlobalParams{
 	const bool use_combined_speed = false;
 
 	const bool record_results = true;
-	const float discount = ( (dataset == DatasetNs::Eth || dataset == DatasetNs::Hotel)? 0.8f:0.0f);
+	const float discount = ( (dataset == DatasetNs::Eth || dataset == DatasetNs::Hotel)? 0.8f:0.5f);
+
+    void updateParam(const std::string &param_file_path) {
+        YAML::Node config = YAML::LoadFile(param_file_path);
+        std::string datasetname = config["data"]["dataset_type"].as<std::string>();
+
+        std::cout << config["model"] << std::endl;
+        std::cout << config["model"]["k"] << std::endl;
+        DEBUG = true;
+    }
 };
 
 
@@ -134,6 +145,8 @@ void AgentInfo::ReadData(std::string filename){
         file.ignore ( std::numeric_limits<std::streamsize>::max(), '\n' );
 
         while(file >>id >>time_frame >>x >>y>>type) {
+            if (type.compare("OTHERS") == 0)
+                continue;
             // Ignore the rest of thel ine
             file.ignore ( std::numeric_limits<std::streamsize>::max(), '\n' );
 
@@ -144,7 +157,10 @@ void AgentInfo::ReadData(std::string filename){
             if(is_first_frame){
                 start_time_frame = time_frame;
                 agent_id = id;
-                agent_type = "Car";
+                if (type.compare("OTHERS") == 0)
+                    agent_type = "Bicycle";
+                else
+                    agent_type = "Car";
                 ref_point = "rear_axle_center";
                 is_first_frame = false;
             }
