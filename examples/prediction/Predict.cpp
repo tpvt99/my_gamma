@@ -10,6 +10,7 @@
 #include <experimental/filesystem>
 #include <pybind11/pybind11.h>
 #include <boost/filesystem/path.hpp>
+#include <iomanip>
 
 namespace py = pybind11;
 
@@ -24,6 +25,7 @@ GammaPredictor::GammaPredictor (){
 	}
 
 	gamma_sim_ = new RVOSimulator();
+    //GlobalParams::updateParam("/home/bptran/nus/gamma/config.yml");
 }
 
 GammaPredictor::GammaPredictor(const std::string &input_folder, const std::string &output_file_path,
@@ -47,6 +49,7 @@ GammaPredictor::GammaPredictor(const std::string &input_folder, const std::strin
     this->param_file_path = param_file_path;
 
     gamma_sim_ = new RVOSimulator();
+    //GlobalParams::updateParam(param_file_path);
 
 }
 
@@ -95,7 +98,7 @@ void GammaPredictor::LoadData(){
         }else if (GlobalParams::dataset == DatasetNs::Univ003) {
             agent_folder += "UCY/univ/students003/";
         } else if (GlobalParams::dataset == DatasetNs::Argoverse) {
-            agent_folder += "small_argoverse/1/";
+            agent_folder += "small_argoverse/194199/";
         }
     } else {
         agent_folder = this->input_folder;
@@ -280,7 +283,7 @@ vector<Vector2> GammaPredictor::GetBoundingBoxCorners(AgentInfo agt, int frame_n
 
 Vector2 GammaPredictor::ComputeGoalPositions(AgentInfo agt, int frame, int goal_id){
 	
-	float total_time = (GlobalParams::predition_horizon) * GlobalParams::TIME_PER_FRAME;
+	float total_time = (GlobalParams::prediction_horizon) * GlobalParams::TIME_PER_FRAME;
 	Vector2 cur_vel = agt.cur_vel [frame];
 
 	float max_speed = AgentParams::getDefaultAgentParam(agt.agent_type).maxSpeed;
@@ -326,7 +329,14 @@ Vector2 GammaPredictor::ComputeGoalPositions(AgentInfo agt, int frame, int goal_
 //predict the future PREDICT_FRAME_NUM frames for each pedestrians from frame predict_begin_frame
 void GammaPredictor::PredictAtOneFrame(int predict_begin_frame){
 
-	cout<<"begin to predict at frame: "<<predict_begin_frame<<endl;
+
+    if (GlobalParams::DEBUG) {
+        cout << "begin to predict at frame: " << predict_begin_frame << endl;
+        if (predict_begin_frame == 19)
+            cout << "";
+        else if (predict_begin_frame >= 20)
+            cout << "";
+    }
 
 	GlobalParams::infer_goal = true;
 
@@ -366,8 +376,14 @@ void GammaPredictor::PredictAtOneFrame(int predict_begin_frame){
 	GlobalParams::infer_goal = false;
 	gamma_sim_->clearAllAgents ();
 
-	if(GlobalParams::record_results)
-		output_file_<<"begin to predict at frame: "<<predict_begin_frame<<endl;
+	if(GlobalParams::record_results) {
+        output_file_<< std::fixed << std::setprecision(5)<<"begin to predict at frame: "<<predict_begin_frame<<endl;
+        if (GlobalParams::DEBUG) {
+            cout <<"begin to predict at frame: "<<predict_begin_frame<<endl;
+
+        }
+
+    }
 
 	int agent_num_in_frame = 0;
 	for(size_t i=0; i<agents_info_.size(); i++){
@@ -409,24 +425,38 @@ void GammaPredictor::PredictAtOneFrame(int predict_begin_frame){
 		}
 	}
 
-	if(GlobalParams::record_results)
-		output_file_<<"there are "<<agent_num_in_frame<<" agents in the frame."<<endl;
+	if(GlobalParams::record_results) {
+        output_file_<<"there are "<<agent_num_in_frame<<" agents in the frame."<<endl;
+        if (GlobalParams::DEBUG) {
+            cout<<"there are "<<agent_num_in_frame<<" agents in the frame."<<endl;
+        }
+    }
 
 	if (agent_num_in_frame == 0)
 		return;
 
-	if(GlobalParams::record_results){
-		for(size_t i=0;i<agent_num_in_frame; i++){
-			int agent_id = gamma_sim_->getAgentID(i);
-		
-			output_file_<<agents_info_[agent_id].agent_id<<" "<<predict_begin_frame<<" "<<gamma_sim_->getAgentPosition(i).x()<<" "<<gamma_sim_->getAgentPosition(i).y()<<" ";
-			output_file_<<agents_info_[agent_id].pos[predict_begin_frame].x()<<" "<<agents_info_[agent_id].pos[predict_begin_frame].y()<<endl;//ground truth position
-		}
-	}
+    // At the first predict frame
+//	if(GlobalParams::record_results){
+//		for(size_t i=0;i<agent_num_in_frame; i++){
+//			int agent_id = gamma_sim_->getAgentID(i);
+//
+//			output_file_<<agents_info_[agent_id].agent_id<<" "<<predict_begin_frame<<" "<<gamma_sim_->getAgentPosition(i).x()<<" "<<gamma_sim_->getAgentPosition(i).y()<<" ";
+//			output_file_<<agents_info_[agent_id].pos[predict_begin_frame].x()<<" "<<agents_info_[agent_id].pos[predict_begin_frame].y()<<endl;//ground truth position
+//            if (GlobalParams::DEBUG) {
+//
+//                cout << "P: " << std::fixed << std::setprecision(5) << agents_info_[agent_id].agent_id<<" "<<predict_begin_frame
+//                <<" "<<gamma_sim_->getAgentPosition(i).x()<<" "<<gamma_sim_->getAgentPosition(i).y()<<" ";
+//
+//                cout << std::fixed << std::setprecision(5) <<agents_info_[agent_id].pos[predict_begin_frame].x()
+//                <<" "<<agents_info_[agent_id].pos[predict_begin_frame].y()<<endl;//ground truth position
+//            }
+//
+//        }
+//	}
 	
 
-	//predicted positions
-	for(size_t j=predict_begin_frame+1; j<predict_begin_frame+GlobalParams::PREDICT_FRAME_NUM; j++){
+	//predicted positions from the second frames onwards
+	for(size_t j=predict_begin_frame+1; j<=predict_begin_frame+GlobalParams::PREDICT_FRAME_NUM; j++){
 		vector<Vector2> poses;
 		vector<Vector2> headings;
 		for (size_t i = 0; i < agent_num_in_frame; i++) {
@@ -449,25 +479,46 @@ void GammaPredictor::PredictAtOneFrame(int predict_begin_frame){
 				float max_tracking_angle = default_agt.max_tracking_angle;
 
 				vector<Vector2> pos_heading = BicycleMove (poses[i], gamma_sim_->getAgentPosition(i), headings[i], max_speed, veh_len, max_tracking_angle);
-				if(GlobalParams::record_results) output_file_<<agents_info_[agent_id].agent_id<<" "<<j<<" "<<pos_heading[0].x()<<" "<<pos_heading[0].y()<<" ";
+				if(GlobalParams::record_results) {
+                    output_file_<<agents_info_[agent_id].agent_id<<" "<<j<<" "<<pos_heading[0].x()<<" "<<pos_heading[0].y()<<" ";
+                    if (GlobalParams::DEBUG) {
+                        cout << "A: " <<agents_info_[agent_id].agent_id<<" "<<j<<" "<<pos_heading[0].x()<<" "<<pos_heading[0].y()<<" ";
+                    }
+
+                }
 				gamma_sim_->setAgentPosition (i, pos_heading[0]);
 				gamma_sim_->setAgentHeading (i, pos_heading[1]);
 				gamma_sim_->setAgentPrefVelocity(i, PrefVel(agents_info_ [agent_id], pos_heading[0], predict_begin_frame, goals[agent_id]));
 
 			} else {
-				if(GlobalParams::record_results) output_file_<<agents_info_[agent_id].agent_id<<" "<<j<<" "<<gamma_sim_->getAgentPosition(i).x()<<" "<<gamma_sim_->getAgentPosition(i).y()<<" ";
+				if(GlobalParams::record_results) {
+                    output_file_<<agents_info_[agent_id].agent_id<<" "<<j<<" "<<gamma_sim_->getAgentPosition(i).x()<<" "<<gamma_sim_->getAgentPosition(i).y()<<" ";
+                    if (GlobalParams::DEBUG) {
+                        cout << "B: " <<agents_info_[agent_id].agent_id<<" "<<j<<" "<<gamma_sim_->getAgentPosition(i).x()<<" "<<gamma_sim_->getAgentPosition(i).y()<<" ";
+                    }
+
+                }
 				gamma_sim_->setAgentPrefVelocity(i, PrefVel(agents_info_ [agent_id],gamma_sim_->getAgentPosition(i), predict_begin_frame, goals[agent_id]));
 
 			}
 
 				
 			if (j <= agents_info_ [agent_id].end_time_frame) {
-				if(GlobalParams::record_results)
-					output_file_<< agents_info_ [agent_id].pos [j].x () <<" "<< agents_info_ [agent_id].pos [j].y ()<<endl;//ground truth position
+				if(GlobalParams::record_results) {
+                    output_file_<< agents_info_ [agent_id].pos [j].x () <<" "<< agents_info_ [agent_id].pos [j].y ()<<endl;//ground truth position
+                    if (GlobalParams::DEBUG) {
+                        cout<< "C: " << agents_info_ [agent_id].pos [j].x () <<" "<< agents_info_ [agent_id].pos [j].y ()<<endl;//ground truth position
+                    }
+
+                }
 
 			} else {
-				if(GlobalParams::record_results)
-					output_file_<<"10000 10000"<<endl;
+				if(GlobalParams::record_results) {
+                    output_file_<<"10000 10000"<<endl;
+                    if (GlobalParams::DEBUG) {
+                        cout << "D: " <<"10000 10000"<<endl;
+                    }
+                }
 			}
 			
 		}

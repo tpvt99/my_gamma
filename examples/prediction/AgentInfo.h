@@ -28,16 +28,17 @@ namespace DatasetNs {
 };
 
 namespace GlobalParams{
-	extern const DatasetNs::Dataset dataset;
-	extern const int MAX_FRAME;
-	extern const float  TIME_PER_FRAME;
-	extern const int PREDICT_FRAME_NUM;
+	extern DatasetNs::Dataset dataset;
+	extern int MAX_FRAME;
+	extern float TIME_PER_FRAME;
+	extern int PREDICT_FRAME_NUM;
+    extern bool DEBUG;
 	extern const bool use_predefined_goal;
 	extern const bool use_front_goals;
 	extern const bool use_direction_prio;
 	extern const int angle_d_size;
 	extern const int history_size;
-	extern const int predition_horizon;
+	extern const int prediction_horizon;
 	extern const float prediction_time;
 	extern const float dist_noise_std;
 	extern bool infer_goal;
@@ -58,6 +59,8 @@ namespace GlobalParams{
 
 	extern const bool record_results;
 	extern const float discount;
+
+    void updateParam(const std::string &param_file_path);
 };
 
 using namespace RVO;
