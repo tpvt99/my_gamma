@@ -52,7 +52,7 @@ def divide_trajectories(agent_id, content, trajectory_segment, prediction_frame_
 
 
     if frame_start != -1 and frame_end != -1:
-        while frame_start + prediction_frame_count <= frame_end+1:
+        while frame_start + prediction_frame_count <= frame_end:
             trajectory_segment[agent_id].append(frame_start)
             trajectory_segment[agent_id].append(frame_start + prediction_frame_count)
             frame_start += 1 #prediction_frame_count #1
@@ -162,9 +162,9 @@ filename = "gamma_output.txt"
 file_handler = open(filename,'r')
 content = file_handler.read().splitlines()
 
-all_agent_id = get_all_agents(content)
+all_agent_id = [1]
 
-prediction_frame_count = 30
+prediction_frame_count = 29
 
 trajectory_segment = {index: copy.deepcopy([]) for index in all_agent_id}
 

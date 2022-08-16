@@ -131,7 +131,7 @@ vector<Vector2> WorldBelief::ComputeGoalPositions(AgentInfo agt, int frame){
 
 	float time_of_acceleration = 0.0f;
 	float time_of_uniform_speed = 0.0f;
-	float total_time = (GlobalParams::predition_horizon) * GlobalParams::TIME_PER_FRAME;
+	float total_time = (GlobalParams::prediction_horizon) * GlobalParams::TIME_PER_FRAME;
 
 	Vector2 cur_vel = agt.cur_vel [frame];
 	Vector2 cur_acc = agt.cur_acc [frame];
